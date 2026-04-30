@@ -7,10 +7,10 @@ import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
-import { InventoryItem, InventoryTransaction as Transaction } from '../lib/database.types';
+import { InventoryItem } from '../lib/database.types';
 
 export const Inventory: React.FC = () => {
-  const { inventoryItems, addInventoryItem, updateInventoryItem, deleteInventoryItem, recordTransaction, currentUser, transactions } = useApp();
+  const { inventoryItems, addInventoryItem, updateInventoryItem, deleteInventoryItem, recordTransaction, currentUser, transactions, locations } = useApp();
   const { can } = usePermissions();
   const { show } = useToast();
 
@@ -29,9 +29,9 @@ export const Inventory: React.FC = () => {
     name: '',
     category: '',
     unit: '',
-    quantityOnHand: 0,
-    reorderLevel: 0,
-    location: '',
+    quantity_on_hand: 0,
+    reorder_level: 0,
+    location_id: '',
     description: ''
   });
 
@@ -48,39 +48,38 @@ export const Inventory: React.FC = () => {
     const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) ||
                          item.category.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = !categoryFilter || item.category === categoryFilter;
-    const matchesLowStock = !lowStockOnly || (item.quantityOnHand < item.reorderLevel);
+    const matchesLowStock = !lowStockOnly || (item.quantity_on_hand < item.reorder_level);
     return matchesSearch && matchesCategory && matchesLowStock;
   });
 
   const getStockStatus = (item: InventoryItem) => {
-    if (item.quantityOnHand === 0) return { label: 'Out of Stock', variant: 'error' as const };
-    if (item.quantityOnHand < item.reorderLevel) return { label: 'Low Stock', variant: 'warning' as const };
+    if (item.quantity_on_hand === 0) return { label: 'Out of Stock', variant: 'error' as const };
+    if (item.quantity_on_hand < item.reorder_level) return { label: 'Low Stock', variant: 'warning' as const };
     return { label: 'OK', variant: 'success' as const };
   };
 
-  const handleAddEdit = () => {
-    if (!formData.name || !formData.category || !formData.unit || !formData.location) {
+  const handleAddEdit = async () => {
+    if (!formData.name || !formData.category || !formData.unit || !formData.location_id) {
       show('Please fill all required fields', 'error');
       return;
     }
 
-    if (selectedItem) {
-      updateInventoryItem(selectedItem.id, formData);
-      show('Item updated successfully', 'success');
-    } else {
-      const newItem: InventoryItem = {
-        id: `i${Date.now()}`,
-        ...formData
-      };
-      addInventoryItem(newItem);
-      show('Item added successfully', 'success');
+    try {
+      if (selectedItem) {
+        await updateInventoryItem(selectedItem.id, formData);
+        show('Item updated successfully', 'success');
+      } else {
+        await addInventoryItem(formData);
+        show('Item added successfully', 'success');
+      }
+      setShowAddEdit(false);
+      resetForm();
+    } catch (error: any) {
+      show(error.message || 'Operation failed', 'error');
     }
-
-    setShowAddEdit(false);
-    resetForm();
   };
 
-  const handleTransaction = () => {
+  const handleTransaction = async () => {
     if (!selectedItem || !currentUser) return;
 
     if (txFormData.quantity <= 0) {
@@ -88,8 +87,8 @@ export const Inventory: React.FC = () => {
       return;
     }
 
-    if (txFormData.type === 'OUTWARD' && txFormData.quantity > selectedItem.quantityOnHand) {
-      show(`Cannot withdraw more than current stock (${selectedItem.quantityOnHand} ${selectedItem.unit})`, 'error');
+    if (txFormData.type === 'OUTWARD' && txFormData.quantity > selectedItem.quantity_on_hand) {
+      show(`Cannot withdraw more than current stock (${selectedItem.quantity_on_hand} ${selectedItem.unit})`, 'error');
       return;
     }
 
@@ -98,23 +97,21 @@ export const Inventory: React.FC = () => {
       return;
     }
 
-    const tx: Transaction = {
-      id: `t${Date.now()}`,
-      itemId: selectedItem.id,
-      itemName: selectedItem.name,
-      type: txFormData.type,
-      quantity: txFormData.quantity,
-      fromLocation: txFormData.type === 'TRANSFER' ? selectedItem.location : null,
-      toLocation: txFormData.type === 'TRANSFER' ? txFormData.toLocation : null,
-      performedBy: currentUser.name,
-      date: new Date(),
-      notes: txFormData.notes
-    };
-
-    recordTransaction(tx);
-    show('Transaction recorded successfully', 'success');
-    setShowTransaction(false);
-    setTxFormData({ type: 'INWARD', quantity: 0, toLocation: '', notes: '' });
+    try {
+      await recordTransaction({
+        itemId: selectedItem.id,
+        quantity: txFormData.quantity,
+        type: txFormData.type,
+        fromLocationId: txFormData.type === 'TRANSFER' ? selectedItem.location_id || undefined : undefined,
+        toLocationId: txFormData.type === 'TRANSFER' ? txFormData.toLocation : undefined,
+        notes: txFormData.notes
+      });
+      show('Transaction recorded successfully', 'success');
+      setShowTransaction(false);
+      setTxFormData({ type: 'INWARD', quantity: 0, toLocation: '', notes: '' });
+    } catch (error: any) {
+      show(error.message || 'Transaction failed', 'error');
+    }
   };
 
   const openAddEdit = (item?: InventoryItem) => {
@@ -124,10 +121,10 @@ export const Inventory: React.FC = () => {
         name: item.name,
         category: item.category,
         unit: item.unit,
-        quantityOnHand: item.quantityOnHand,
-        reorderLevel: item.reorderLevel,
-        location: item.location,
-        description: item.description
+        quantity_on_hand: item.quantity_on_hand,
+        reorder_level: item.reorder_level,
+        location_id: item.location_id || '',
+        description: item.description || ''
       });
     } else {
       setSelectedItem(null);
@@ -150,10 +147,14 @@ export const Inventory: React.FC = () => {
     setActiveDropdown(null);
   };
 
-  const handleDelete = (id: string) => {
-    deleteInventoryItem(id);
-    show('Item deleted successfully', 'success');
-    setDeleteConfirm(null);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteInventoryItem(id);
+      show('Item deleted successfully', 'success');
+      setDeleteConfirm(null);
+    } catch (error: any) {
+      show(error.message || 'Delete failed', 'error');
+    }
   };
 
   const resetForm = () => {
@@ -161,15 +162,15 @@ export const Inventory: React.FC = () => {
       name: '',
       category: '',
       unit: '',
-      quantityOnHand: 0,
-      reorderLevel: 0,
-      location: '',
+      quantity_on_hand: 0,
+      reorder_level: 0,
+      location_id: '',
       description: ''
     });
   };
 
   const itemTransactions = selectedItem
-    ? transactions.filter(t => t.itemId === selectedItem.id).sort((a, b) => b.date.getTime() - a.date.getTime())
+    ? transactions.filter(t => t.item_id === selectedItem.id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     : [];
 
   return (
@@ -258,14 +259,14 @@ export const Inventory: React.FC = () => {
                       <td className="px-6 py-4 text-sm text-gray-600">{item.category}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{item.unit}</td>
                       <td className={`px-6 py-4 text-sm font-semibold ${
-                        item.quantityOnHand === 0 ? 'text-red-600' :
-                        item.quantityOnHand < item.reorderLevel ? 'text-amber-600' :
+                        item.quantity_on_hand === 0 ? 'text-red-600' :
+                        item.quantity_on_hand < item.reorder_level ? 'text-amber-600' :
                         'text-green-600'
                       }`}>
-                        {item.quantityOnHand}
+                        {item.quantity_on_hand}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{item.reorderLevel}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{item.location}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{item.reorder_level}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{item.location?.name || 'N/A'}</td>
                       <td className="px-6 py-4">
                         <Badge variant={status.variant}>{status.label}</Badge>
                       </td>
@@ -395,12 +396,16 @@ export const Inventory: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              <select
+                value={formData.location_id}
+                onChange={(e) => setFormData({ ...formData, location_id: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              >
+                <option value="">Select location</option>
+                {locations.map(loc => (
+                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -408,8 +413,8 @@ export const Inventory: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Quantity on Hand</label>
               <input
                 type="number"
-                value={formData.quantityOnHand}
-                onChange={(e) => setFormData({ ...formData, quantityOnHand: parseFloat(e.target.value) || 0 })}
+                value={formData.quantity_on_hand}
+                onChange={(e) => setFormData({ ...formData, quantity_on_hand: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -417,8 +422,8 @@ export const Inventory: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Reorder Level</label>
               <input
                 type="number"
-                value={formData.reorderLevel}
-                onChange={(e) => setFormData({ ...formData, reorderLevel: parseFloat(e.target.value) || 0 })}
+                value={formData.reorder_level}
+                onChange={(e) => setFormData({ ...formData, reorder_level: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -461,7 +466,7 @@ export const Inventory: React.FC = () => {
           <div className="space-y-4">
             <div className="p-3 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600">Item: <span className="font-medium text-gray-900">{selectedItem.name}</span></p>
-              <p className="text-sm text-gray-600 mt-1">Current Stock: <span className="font-medium text-gray-900">{selectedItem.quantityOnHand} {selectedItem.unit}</span></p>
+              <p className="text-sm text-gray-600 mt-1">Current Stock: <span className="font-medium text-gray-900">{selectedItem.quantity_on_hand} {selectedItem.unit}</span></p>
             </div>
 
             <div>
@@ -495,7 +500,7 @@ export const Inventory: React.FC = () => {
                 min="0"
                 step="0.01"
               />
-              {txFormData.type === 'OUTWARD' && txFormData.quantity > selectedItem.quantityOnHand && (
+              {txFormData.type === 'OUTWARD' && txFormData.quantity > selectedItem.quantity_on_hand && (
                 <p className="text-sm text-red-600 mt-1">Cannot exceed current stock</p>
               )}
             </div>
@@ -549,15 +554,15 @@ export const Inventory: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Location</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedItem.location}</p>
+                <p className="mt-1 text-sm text-gray-900">{selectedItem.location?.name || 'N/A'}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Quantity on Hand</label>
-                <p className="mt-1 text-sm font-semibold text-gray-900">{selectedItem.quantityOnHand} {selectedItem.unit}</p>
+                <p className="mt-1 text-sm font-semibold text-gray-900">{selectedItem.quantity_on_hand} {selectedItem.unit}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Reorder Level</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedItem.reorderLevel} {selectedItem.unit}</p>
+                <p className="mt-1 text-sm text-gray-900">{selectedItem.reorder_level} {selectedItem.unit}</p>
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-500">Description</label>
@@ -580,11 +585,11 @@ export const Inventory: React.FC = () => {
                           </Badge>
                           <span className="text-sm font-medium text-gray-900">{tx.quantity} {selectedItem.unit}</span>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">{tx.notes}</p>
+                        <p className="text-xs text-gray-600 mt-1">{tx.notes || 'No notes'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-600">{tx.performedBy}</p>
-                        <p className="text-xs text-gray-500">{tx.date.toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-600">{tx.performer?.name || 'N/A'}</p>
+                        <p className="text-xs text-gray-500">{new Date(tx.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                   ))}

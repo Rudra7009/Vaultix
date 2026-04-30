@@ -16,14 +16,16 @@ export const Maintenance: React.FC = () => {
   const filteredRecords = maintenanceRecords.filter(m => {
     if (activeTab === 'all') return true;
     if (activeTab === 'upcoming') {
-      return m.status === 'SCHEDULED' && m.scheduledDate <= sevenDaysFromNow && m.scheduledDate >= today;
+      const scheduledDate = new Date(m.scheduled_date);
+      return m.status === 'SCHEDULED' && scheduledDate <= sevenDaysFromNow && scheduledDate >= today;
     }
     return m.status === activeTab;
   });
 
-  const upcomingCount = maintenanceRecords.filter(
-    m => m.status === 'SCHEDULED' && m.scheduledDate <= sevenDaysFromNow && m.scheduledDate >= today
-  ).length;
+  const upcomingCount = maintenanceRecords.filter(m => {
+    const scheduledDate = new Date(m.scheduled_date);
+    return m.status === 'SCHEDULED' && scheduledDate <= sevenDaysFromNow && scheduledDate >= today;
+  }).length;
 
   const getStatusVariant = (status: MaintenanceStatus) => {
     switch (status) {
@@ -91,18 +93,19 @@ export const Maintenance: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredRecords.map(record => {
-                const isPastDue = record.status !== 'COMPLETED' && record.scheduledDate < today;
+                const scheduledDate = new Date(record.scheduled_date);
+                const isPastDue = record.status !== 'COMPLETED' && scheduledDate < today;
                 return (
                   <tr key={record.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{record.assetName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{record.assetSerialNo}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{record.asset?.name || 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{record.asset?.serial_no || 'N/A'}</td>
                     <td className="px-6 py-4">
-                      <Badge variant={record.maintenanceType === 'PREVENTIVE' ? 'info' : 'warning'}>
-                        {record.maintenanceType}
+                      <Badge variant={record.maintenance_type === 'PREVENTIVE' ? 'info' : 'warning'}>
+                        {record.maintenance_type}
                       </Badge>
                     </td>
                     <td className={`px-6 py-4 text-sm ${isPastDue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                      {record.scheduledDate.toLocaleDateString()}
+                      {scheduledDate.toLocaleDateString()}
                       {isPastDue && ' (overdue)'}
                     </td>
                     <td className="px-6 py-4">
@@ -110,7 +113,7 @@ export const Maintenance: React.FC = () => {
                         {record.status.replace('_', ' ')}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{record.technician}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{record.technician?.name || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {record.cost ? `$${record.cost}` : '-'}
                     </td>

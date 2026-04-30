@@ -1,48 +1,33 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Badge } from '../components/Badge';
 
 export const ActivityLog: React.FC = () => {
-  const { assets, inventoryItems, users, maintenanceRecords } = useApp();
+  const { auditLogs, users } = useApp();
   const [search, setSearch] = useState('');
   const [entityFilter, setEntityFilter] = useState('');
   const [userFilter, setUserFilter] = useState('');
 
-  // Generate activity log from existing data
-  const activityLog = [
-    ...assets.slice(0, 10).map((a, i) => ({
-      id: `log-asset-${i}`,
-      timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
-      event: `Asset ${a.status === 'ASSIGNED' ? 'assigned' : 'added'}`,
-      entity: 'Asset',
-      entityName: a.name,
-      performedBy: users[i % users.length].name
-    })),
-    ...inventoryItems.slice(0, 10).map((item, i) => ({
-      id: `log-inv-${i}`,
-      timestamp: new Date(Date.now() - (i + 10) * 24 * 60 * 60 * 1000),
-      event: item.quantityOnHand < item.reorderLevel ? 'Low stock alert' : 'Item updated',
-      entity: 'Inventory',
-      entityName: item.name,
-      performedBy: users[i % users.length].name
-    })),
-    ...maintenanceRecords.slice(0, 10).map((m, i) => ({
-      id: `log-maint-${i}`,
-      timestamp: new Date(Date.now() - (i + 20) * 24 * 60 * 60 * 1000),
-      event: `Maintenance ${m.status.toLowerCase()}`,
-      entity: 'Maintenance',
-      entityName: m.assetName,
-      performedBy: m.technician
-    }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  // Get unique entity types from real audit logs
+  const entityTypes = Array.from(new Set(auditLogs.map(log => log.entity_type)));
 
-  const filteredLog = activityLog.filter(log => {
-    const matchesSearch = log.event.toLowerCase().includes(search.toLowerCase()) ||
-                         log.entityName.toLowerCase().includes(search.toLowerCase());
-    const matchesEntity = !entityFilter || log.entity === entityFilter;
-    const matchesUser = !userFilter || log.performedBy === userFilter;
+  const filteredLog = auditLogs.filter(log => {
+    const matchesSearch = log.event_type.toLowerCase().includes(search.toLowerCase()) ||
+                         log.entity_type.toLowerCase().includes(search.toLowerCase()) ||
+                         (log.performer?.name || '').toLowerCase().includes(search.toLowerCase());
+    const matchesEntity = !entityFilter || log.entity_type === entityFilter;
+    const matchesUser = !userFilter || log.performer?.name === userFilter;
     return matchesSearch && matchesEntity && matchesUser;
   });
+
+  const getEventBadgeVariant = (eventType: string) => {
+    if (eventType.includes('CREATED') || eventType.includes('ADDED')) return 'success';
+    if (eventType.includes('DELETED') || eventType.includes('DISPOSED')) return 'error';
+    if (eventType.includes('UPDATED') || eventType.includes('DONE')) return 'info';
+    if (eventType.includes('SCHEDULED') || eventType.includes('ISSUED')) return 'warning';
+    return 'default';
+  };
 
   return (
     <div className="space-y-6">
@@ -69,9 +54,9 @@ export const ActivityLog: React.FC = () => {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">All Entity Types</option>
-            <option value="Asset">Asset</option>
-            <option value="Inventory">Inventory</option>
-            <option value="Maintenance">Maintenance</option>
+            {entityTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
           </select>
           <select
             value={userFilter}
@@ -98,18 +83,38 @@ export const ActivityLog: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredLog.map(log => (
-                <tr key={log.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {log.timestamp.toLocaleString()}
+              {filteredLog.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500 text-sm">
+                    No activity logs found
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{log.event}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {log.entity}: {log.entityName}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{log.performedBy}</td>
                 </tr>
-              ))}
+              ) : (
+                filteredLog.map(log => (
+                  <tr key={log.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {new Date(log.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant={getEventBadgeVariant(log.event_type)}>
+                        {log.event_type.replace(/_/g, ' ')}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {log.entity_type}
+                      {log.entity_id && (
+                        <span className="text-gray-400 ml-1 text-xs">({log.entity_id.slice(0, 8)}…)</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {log.performer?.name || 'System'}
+                      {log.performer?.role && (
+                        <span className="text-gray-400 ml-1 text-xs">({log.performer.role})</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

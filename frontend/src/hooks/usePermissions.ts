@@ -1,5 +1,4 @@
 import { useApp } from '../context/AppContext';
-import { Role } from '../data/seed';
 
 export const usePermissions = () => {
   const { currentUser } = useApp();

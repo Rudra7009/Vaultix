@@ -14,19 +14,22 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
   const navigate = useNavigate();
 
   // Calculate notifications
-  const lowStockItems = inventoryItems.filter(i => i.quantityOnHand > 0 && i.quantityOnHand < i.reorderLevel);
-  const outOfStockItems = inventoryItems.filter(i => i.quantityOnHand === 0);
+  const lowStockItems = inventoryItems.filter(i => i.quantity_on_hand > 0 && i.quantity_on_hand < i.reorder_level);
+  const outOfStockItems = inventoryItems.filter(i => i.quantity_on_hand === 0);
   
   const today = new Date();
   const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const upcomingMaintenance = maintenanceRecords.filter(
-    m => m.status === 'SCHEDULED' && m.scheduledDate <= sevenDaysFromNow && m.scheduledDate >= today
-  );
+  const upcomingMaintenance = maintenanceRecords.filter(m => {
+    const scheduledDate = new Date(m.scheduled_date);
+    return m.status === 'SCHEDULED' && scheduledDate <= sevenDaysFromNow && scheduledDate >= today;
+  });
 
   const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const expiringWarranties = assets.filter(
-    a => a.warrantyExpiry && a.warrantyExpiry <= thirtyDaysFromNow && a.warrantyExpiry >= today
-  );
+  const expiringWarranties = assets.filter(a => {
+    if (!a.warranty_expiry) return false;
+    const warrantyDate = new Date(a.warranty_expiry);
+    return warrantyDate <= thirtyDaysFromNow && warrantyDate >= today;
+  });
 
   const totalNotifications = lowStockItems.length + outOfStockItems.length + upcomingMaintenance.length + expiringWarranties.length;
 
@@ -38,17 +41,17 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
     })),
     ...lowStockItems.map(item => ({
       type: 'warning' as const,
-      message: `Low stock: ${item.name} (${item.quantityOnHand} ${item.unit} remaining)`,
+      message: `Low stock: ${item.name} (${item.quantity_on_hand} ${item.unit} remaining)`,
       link: '/inventory'
     })),
     ...upcomingMaintenance.map(m => ({
       type: 'info' as const,
-      message: `Maintenance due: ${m.assetName} on ${m.scheduledDate.toLocaleDateString()}`,
+      message: `Maintenance due: ${m.asset?.name || 'Unknown'} on ${new Date(m.scheduled_date).toLocaleDateString()}`,
       link: '/maintenance'
     })),
     ...expiringWarranties.map(a => ({
       type: 'warning' as const,
-      message: `Warranty expiring: ${a.name} on ${a.warrantyExpiry?.toLocaleDateString()}`,
+      message: `Warranty expiring: ${a.name} on ${a.warranty_expiry ? new Date(a.warranty_expiry).toLocaleDateString() : 'N/A'}`,
       link: `/assets/${a.id}`
     }))
   ];
@@ -117,7 +120,11 @@ export const Header: React.FC<HeaderProps> = ({ title }) => {
         {/* User Avatar */}
         {currentUser && (
           <div className="flex items-center gap-2">
-            <Avatar initials={currentUser.avatar} role={currentUser.role} size="sm" />
+            <Avatar 
+              initials={currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)} 
+              role={currentUser.role} 
+              size="sm" 
+            />
             <span className="text-sm font-medium text-gray-700">{currentUser.name}</span>
           </div>
         )}

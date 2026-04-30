@@ -26,7 +26,7 @@ export const AssetDetail: React.FC = () => {
     );
   }
 
-  const assetMaintenance = maintenanceRecords.filter(m => m.assetId === asset.id);
+  const assetMaintenance = maintenanceRecords.filter(m => m.asset_id === asset.id);
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -47,15 +47,15 @@ export const AssetDetail: React.FC = () => {
     }
   };
 
-  const warrantyDaysLeft = asset.warrantyExpiry
-    ? Math.floor((asset.warrantyExpiry.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+  const warrantyDaysLeft = asset.warranty_expiry
+    ? Math.floor((new Date(asset.warranty_expiry).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
   // Fake activity log
   const activityLog = [
     { date: new Date(), action: 'Asset created', user: 'System' },
     { date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), action: 'Status changed to ' + asset.status, user: 'Admin' },
-    ...(asset.assignedTo ? [{ date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), action: `Assigned to ${asset.assignedTo}`, user: 'Manager' }] : [])
+    ...(asset.assignedUser ? [{ date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), action: `Assigned to ${asset.assignedUser.name}`, user: 'Manager' }] : [])
   ];
 
   return (
@@ -69,7 +69,7 @@ export const AssetDetail: React.FC = () => {
         </button>
         <div className="flex-1">
           <h2 className="text-2xl font-bold text-gray-900">{asset.name}</h2>
-          <p className="text-gray-600">{asset.serialNo}</p>
+          <p className="text-gray-600">{asset.serial_no}</p>
         </div>
         <div className="flex gap-2">
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
@@ -99,31 +99,31 @@ export const AssetDetail: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-500">Serial Number</label>
-                <p className="mt-1 text-sm text-gray-900">{asset.serialNo}</p>
+                <p className="mt-1 text-sm text-gray-900">{asset.serial_no}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Asset Type</label>
-                <p className="mt-1 text-sm text-gray-900">{asset.assetType}</p>
+                <p className="mt-1 text-sm text-gray-900">{asset.asset_type}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Location</label>
-                <p className="mt-1 text-sm text-gray-900">{asset.location}</p>
+                <p className="mt-1 text-sm text-gray-900">{asset.location?.name || 'N/A'}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Department</label>
-                <p className="mt-1 text-sm text-gray-900">{asset.department}</p>
+                <p className="mt-1 text-sm text-gray-900">{asset.department?.name || 'N/A'}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Purchase Date</label>
-                <p className="mt-1 text-sm text-gray-900">{asset.purchaseDate.toLocaleDateString()}</p>
+                <p className="mt-1 text-sm text-gray-900">{asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString() : 'N/A'}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">Cost</label>
-                <p className="mt-1 text-sm text-gray-900">${asset.cost.toLocaleString()}</p>
+                <p className="mt-1 text-sm text-gray-900">${asset.cost ? asset.cost.toLocaleString() : 'N/A'}</p>
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-500">Description</label>
-                <p className="mt-1 text-sm text-gray-900">No description available</p>
+                <p className="mt-1 text-sm text-gray-900">{asset.description || 'No description available'}</p>
               </div>
             </div>
           </div>
@@ -160,7 +160,10 @@ export const AssetDetail: React.FC = () => {
                   <p className="text-center text-gray-500 py-8">No maintenance records</p>
                 ) : (
                   <div className="space-y-4">
-                    {assetMaintenance.map(m => (
+                    {assetMaintenance.map(m => {
+                      const scheduledDate = new Date(m.scheduled_date);
+                      const completedDate = m.completed_date ? new Date(m.completed_date) : null;
+                      return (
                       <div key={m.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -168,19 +171,19 @@ export const AssetDetail: React.FC = () => {
                               <Badge variant={getMaintenanceStatusVariant(m.status)}>
                                 {m.status.replace('_', ' ')}
                               </Badge>
-                              <span className="text-sm font-medium text-gray-900">{m.maintenanceType}</span>
+                              <span className="text-sm font-medium text-gray-900">{m.maintenance_type}</span>
                             </div>
-                            <p className="text-sm text-gray-600 mt-2">{m.remarks}</p>
+                            <p className="text-sm text-gray-600 mt-2">{m.remarks || 'No remarks'}</p>
                             <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                              <span>Scheduled: {m.scheduledDate.toLocaleDateString()}</span>
-                              {m.completedDate && <span>Completed: {m.completedDate.toLocaleDateString()}</span>}
-                              <span>Technician: {m.technician}</span>
+                              <span>Scheduled: {scheduledDate.toLocaleDateString()}</span>
+                              {completedDate && <span>Completed: {completedDate.toLocaleDateString()}</span>}
+                              <span>Technician: {m.technician?.name || 'N/A'}</span>
                               {m.cost && <span>Cost: ${m.cost}</span>}
                             </div>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 )
               ) : (
@@ -234,17 +237,17 @@ export const AssetDetail: React.FC = () => {
                 <rect x="80" y="85" width="20" height="15" fill="#000" />
               </svg>
             </div>
-            <p className="text-center text-sm text-gray-600 mt-2">{asset.serialNo}</p>
+            <p className="text-center text-sm text-gray-600 mt-2">{asset.serial_no}</p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
-            {asset.assignedTo ? (
+            {asset.assignedUser ? (
               <div>
                 <p className="text-sm text-gray-600">Assigned to</p>
-                <p className="text-sm font-medium text-gray-900 mt-1">{asset.assignedTo}</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">{asset.assignedUser.name}</p>
                 <p className="text-sm text-gray-600 mt-2">Department</p>
-                <p className="text-sm font-medium text-gray-900 mt-1">{asset.department}</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">{asset.department?.name || 'N/A'}</p>
               </div>
             ) : (
               <p className="text-sm text-gray-600">Not assigned</p>
@@ -258,21 +261,21 @@ export const AssetDetail: React.FC = () => {
                 <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-600">Purchase Date</p>
-                  <p className="text-sm font-medium text-gray-900">{asset.purchaseDate.toLocaleDateString()}</p>
+                  <p className="text-sm font-medium text-gray-900">{asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString() : 'N/A'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-600">Warranty Expiry</p>
-                  {asset.warrantyExpiry ? (
+                  {asset.warranty_expiry ? (
                     <>
                       <p className={`text-sm font-medium ${
                         warrantyDaysLeft && warrantyDaysLeft < 0 ? 'text-red-600' :
                         warrantyDaysLeft && warrantyDaysLeft <= 30 ? 'text-amber-600' :
                         'text-gray-900'
                       }`}>
-                        {asset.warrantyExpiry.toLocaleDateString()}
+                        {new Date(asset.warranty_expiry).toLocaleDateString()}
                       </p>
                       {warrantyDaysLeft !== null && (
                         <p className="text-xs text-gray-500 mt-1">
@@ -291,14 +294,14 @@ export const AssetDetail: React.FC = () => {
                 <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-600">Purchase Cost</p>
-                  <p className="text-sm font-medium text-gray-900">${asset.cost.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-900">${asset.cost ? asset.cost.toLocaleString() : 'N/A'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-600">Current Location</p>
-                  <p className="text-sm font-medium text-gray-900">{asset.location}</p>
+                  <p className="text-sm font-medium text-gray-900">{asset.location?.name || 'N/A'}</p>
                 </div>
               </div>
             </div>

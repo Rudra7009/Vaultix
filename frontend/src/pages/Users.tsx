@@ -8,7 +8,7 @@ import { Modal } from '../components/Modal';
 import { Profile as User, UserRole as Role } from '../lib/database.types';
 
 export const Users: React.FC = () => {
-  const { users, currentUser, addUser, updateUser } = useApp();
+  const { users, currentUser, addUser, updateUser, departments } = useApp();
   const { show } = useToast();
   const [showAddEdit, setShowAddEdit] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -18,7 +18,7 @@ export const Users: React.FC = () => {
     name: '',
     email: '',
     role: 'INVENTORY_CLERK' as Role,
-    department: ''
+    department_id: ''
   });
 
   const getRoleBadgeVariant = (role: Role) => {
@@ -31,28 +31,33 @@ export const Users: React.FC = () => {
     }
   };
 
-  const handleAddEdit = () => {
-    if (!formData.name || !formData.email || !formData.department) {
+  const handleAddEdit = async () => {
+    if (!formData.name || !formData.email || !formData.department_id) {
       show('Please fill all required fields', 'error');
       return;
     }
 
-    if (selectedUser) {
-      updateUser(selectedUser.id, formData);
-      show('User updated successfully', 'success');
-    } else {
-      const newUser: User = {
-        id: `u${Date.now()}`,
-        ...formData,
-        avatar: formData.name.split(' ').map(n => n[0]).join('').toUpperCase(),
-        isActive: true
-      };
-      addUser(newUser);
-      show('User added successfully', 'success');
-    }
+    try {
+      if (selectedUser) {
+        await updateUser(selectedUser.id, formData);
+        show('User updated successfully', 'success');
+      } else {
+        const newUser = {
+          name: formData.name,
+          email: formData.email,
+          password: 'temp123', // Temporary password
+          role: formData.role,
+          departmentId: formData.department_id
+        };
+        await addUser(newUser);
+        show('User added successfully', 'success');
+      }
 
-    setShowAddEdit(false);
-    resetForm();
+      setShowAddEdit(false);
+      resetForm();
+    } catch (error: any) {
+      show(error.message || 'Operation failed', 'error');
+    }
   };
 
   const toggleUserStatus = (user: User) => {
@@ -60,8 +65,8 @@ export const Users: React.FC = () => {
       show('Cannot deactivate yourself', 'error');
       return;
     }
-    updateUser(user.id, { isActive: !user.isActive });
-    show(`User ${user.isActive ? 'deactivated' : 'activated'} successfully`, 'success');
+    updateUser(user.id, { is_active: !user.is_active });
+    show(`User ${user.is_active ? 'deactivated' : 'activated'} successfully`, 'success');
     setActiveDropdown(null);
   };
 
@@ -72,7 +77,7 @@ export const Users: React.FC = () => {
         name: user.name,
         email: user.email,
         role: user.role,
-        department: user.department
+        department_id: user.department_id || ''
       });
     } else {
       setSelectedUser(null);
@@ -87,7 +92,7 @@ export const Users: React.FC = () => {
       name: '',
       email: '',
       role: 'INVENTORY_CLERK',
-      department: ''
+      department_id: ''
     });
   };
 
@@ -125,7 +130,7 @@ export const Users: React.FC = () => {
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <Avatar initials={user.avatar} role={user.role} size="sm" />
+                      <Avatar initials={user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)} role={user.role} size="sm" />
                       <span className="text-sm font-medium text-gray-900">{user.name}</span>
                     </div>
                   </td>
@@ -135,10 +140,10 @@ export const Users: React.FC = () => {
                       {user.role.replace('_', ' ')}
                     </Badge>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{user.department}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{user.department?.name || 'N/A'}</td>
                   <td className="px-6 py-4">
-                    <Badge variant={user.isActive ? 'success' : 'default'}>
-                      {user.isActive ? 'Active' : 'Inactive'}
+                    <Badge variant={user.is_active ? 'success' : 'default'}>
+                      {user.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -170,7 +175,7 @@ export const Users: React.FC = () => {
                               }`}
                             >
                               <Power className="w-4 h-4" />
-                              {user.isActive ? 'Deactivate' : 'Activate'}
+                              {user.is_active ? 'Deactivate' : 'Activate'}
                             </button>
                           </div>
                         </>
@@ -246,12 +251,16 @@ export const Users: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
-            <input
-              type="text"
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+            <select
+              value={formData.department_id}
+              onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            >
+              <option value="">Select department</option>
+              {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </Modal>

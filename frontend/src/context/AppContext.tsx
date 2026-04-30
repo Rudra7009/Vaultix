@@ -20,6 +20,7 @@ interface AppContextType {
   departments: Department[]
   auditLogs: AuditLog[]
   loading: boolean
+  logout: () => Promise<void>
   addAsset: (asset: Partial<Asset>) => Promise<void>
   updateAsset: (id: string, updates: Partial<Asset>) => Promise<void>
   deleteAsset: (id: string) => Promise<void>
@@ -92,7 +93,7 @@ export function AppProvider({ children, currentUser, setCurrentUser }: {
     await supabase.from('audit_logs').insert({
       event_type: eventType, entity_type: entityType,
       entity_id: entityId || null, performed_by: currentUser.id, details: details || {}
-    })
+    } as any)
   }
 
   async function addAsset(asset: Partial<Asset>) {
@@ -103,14 +104,15 @@ export function AppProvider({ children, currentUser, setCurrentUser }: {
   }
 
   async function updateAsset(id: string, updates: Partial<Asset>) {
-    const { error } = await supabase.from('assets').update(updates as any).eq('id', id)
+    // @ts-ignore - Supabase type inference issue
+    const { error } = await supabase.from('assets').update(updates).eq('id', id)
     if (error) throw error
     await logAudit('ASSET_UPDATED', 'Asset', id, updates)
     await fetchAll()
   }
 
   async function deleteAsset(id: string) {
-    const { error } = await supabase.from('assets').update({ status: 'DISPOSED' as AssetStatus }).eq('id', id)
+    const { error } = await supabase.from('assets').update({ status: 'DISPOSED' }).eq('id', id)
     if (error) throw error
     await logAudit('ASSET_DISPOSED', 'Asset', id, {})
     await fetchAll()
@@ -194,15 +196,30 @@ export function AppProvider({ children, currentUser, setCurrentUser }: {
   }
 
   async function addUser(data: { name: string; email: string; password: string; role: Profile['role']; departmentId?: string }) {
-    const { data: created, error } = await supabase.auth.signUp({
-      email: data.email, password: data.password,
-      options: { data: { name: data.name, role: data.role } }
+    // Step 1: Create user via signUp (works client-side)
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: { name: data.name, role: data.role }
+      }
     })
-    if (error) throw error
-    if (created.user && data.departmentId) {
-      await supabase.from('profiles').update({ department_id: data.departmentId, role: data.role }).eq('id', created.user.id)
+    if (signUpError) throw signUpError
+
+    // Step 2: If profile wasn't auto-created by trigger, create it manually
+    if (authData.user) {
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: authData.user.id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        department_id: data.departmentId || null,
+        is_active: true,
+      } as any)
+      if (profileError) throw profileError
     }
-    await logAudit('USER_CREATED', 'User', undefined, { name: data.name, role: data.role })
+
+    await logAudit('USER_CREATED', 'User', authData.user?.id, { name: data.name, role: data.role })
     await fetchAll()
   }
 
@@ -212,11 +229,17 @@ export function AppProvider({ children, currentUser, setCurrentUser }: {
     await fetchAll()
   }
 
+  async function logout() {
+    await supabase.auth.signOut()
+    setCurrentUser(null)
+  }
+
   return (
     <AppContext.Provider value={{
       currentUser, setCurrentUser,
       assets, inventoryItems, transactions, maintenanceRecords,
       users, locations, departments, auditLogs, loading,
+      logout,
       addAsset, updateAsset, deleteAsset,
       addInventoryItem, updateInventoryItem, deleteInventoryItem, recordTransaction,
       addMaintenance, updateMaintenance, deleteMaintenance,

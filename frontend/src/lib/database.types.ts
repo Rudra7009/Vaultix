@@ -110,17 +110,19 @@ export interface AuditLog {
   performer?: { name: string; role: string }
 }
 
+type AnyRecord = Record<string, any>
+
 export interface Database {
   public: {
     Tables: {
-      profiles: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile> }
-      departments: { Row: Department; Insert: Partial<Department>; Update: Partial<Department> }
-      locations: { Row: Location; Insert: Partial<Location>; Update: Partial<Location> }
-      assets: { Row: Asset; Insert: Partial<Asset>; Update: Partial<Asset> }
-      inventory_items: { Row: InventoryItem; Insert: Partial<InventoryItem>; Update: Partial<InventoryItem> }
-      inventory_transactions: { Row: InventoryTransaction; Insert: Partial<InventoryTransaction>; Update: Partial<InventoryTransaction> }
-      maintenance_records: { Row: MaintenanceRecord; Insert: Partial<MaintenanceRecord>; Update: Partial<MaintenanceRecord> }
-      audit_logs: { Row: AuditLog; Insert: Partial<AuditLog>; Update: Partial<AuditLog> }
+      profiles: { Row: Profile; Insert: AnyRecord; Update: AnyRecord }
+      departments: { Row: Department; Insert: AnyRecord; Update: AnyRecord }
+      locations: { Row: Location; Insert: AnyRecord; Update: AnyRecord }
+      assets: { Row: Asset; Insert: AnyRecord; Update: AnyRecord }
+      inventory_items: { Row: InventoryItem; Insert: AnyRecord; Update: AnyRecord }
+      inventory_transactions: { Row: InventoryTransaction; Insert: AnyRecord; Update: AnyRecord }
+      maintenance_records: { Row: MaintenanceRecord; Insert: AnyRecord; Update: AnyRecord }
+      audit_logs: { Row: AuditLog; Insert: AnyRecord; Update: AnyRecord }
     }
   }
 }

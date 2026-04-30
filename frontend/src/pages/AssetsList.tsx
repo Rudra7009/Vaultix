@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { Badge } from '../components/Badge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
-import { Asset, AssetStatus } from '../lib/database.types';
+import { AssetStatus } from '../lib/database.types';
 
 export const AssetsList: React.FC = () => {
   const { assets, deleteAsset } = useApp();
@@ -22,15 +22,15 @@ export const AssetsList: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  const assetTypes = Array.from(new Set(assets.map(a => a.assetType)));
-  const departments = Array.from(new Set(assets.map(a => a.department)));
+  const assetTypes = Array.from(new Set(assets.map(a => a.asset_type)));
+  const departments = Array.from(new Set(assets.map(a => a.department?.name).filter(Boolean)));
 
   const filteredAssets = assets.filter(asset => {
     const matchesSearch = asset.name.toLowerCase().includes(search.toLowerCase()) ||
-                         asset.serialNo.toLowerCase().includes(search.toLowerCase());
+                         asset.serial_no.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = !statusFilter || asset.status === statusFilter;
-    const matchesType = !typeFilter || asset.assetType === typeFilter;
-    const matchesDept = !deptFilter || asset.department === deptFilter;
+    const matchesType = !typeFilter || asset.asset_type === typeFilter;
+    const matchesDept = !deptFilter || asset.department?.name === deptFilter;
     return matchesSearch && matchesStatus && matchesType && matchesDept;
   });
 
@@ -43,14 +43,15 @@ export const AssetsList: React.FC = () => {
     }
   };
 
-  const getWarrantyStatus = (expiry: Date | null) => {
+  const getWarrantyStatus = (expiry: string | null) => {
     if (!expiry) return { text: 'N/A', className: 'text-gray-600' };
+    const expiryDate = new Date(expiry);
     const today = new Date();
-    const daysUntil = Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntil = Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (daysUntil < 0) return { text: `${expiry.toLocaleDateString()} (expired)`, className: 'text-red-600 font-semibold' };
-    if (daysUntil <= 30) return { text: `${expiry.toLocaleDateString()} (expiring soon)`, className: 'text-amber-600 font-semibold' };
-    return { text: expiry.toLocaleDateString(), className: 'text-gray-600' };
+    if (daysUntil < 0) return { text: `${expiryDate.toLocaleDateString()} (expired)`, className: 'text-red-600 font-semibold' };
+    if (daysUntil <= 30) return { text: `${expiryDate.toLocaleDateString()} (expiring soon)`, className: 'text-amber-600 font-semibold' };
+    return { text: expiryDate.toLocaleDateString(), className: 'text-gray-600' };
   };
 
   const handleDelete = (id: string) => {
@@ -149,21 +150,21 @@ export const AssetsList: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredAssets.map(asset => {
-                  const warranty = getWarrantyStatus(asset.warrantyExpiry);
+                  const warranty = getWarrantyStatus(asset.warranty_expiry);
                   return (
                     <tr key={asset.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{asset.serialNo}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{asset.serial_no}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{asset.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{asset.assetType}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{asset.asset_type}</td>
                       <td className="px-6 py-4">
                         <Badge variant={getStatusVariant(asset.status)}>
                           {asset.status.replace('_', ' ')}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{asset.location}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{asset.department}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{asset.assignedTo || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{asset.purchaseDate.toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{asset.location?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{asset.department?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{asset.assignedUser?.name || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString() : 'N/A'}</td>
                       <td className={`px-6 py-4 text-sm ${warranty.className}`}>{warranty.text}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="relative inline-block">

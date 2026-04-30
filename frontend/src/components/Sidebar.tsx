@@ -64,7 +64,11 @@ export const Sidebar: React.FC = () => {
       {currentUser && (
         <div className="p-4 border-t border-slate-800">
           <div className="flex items-center gap-3 mb-3">
-            <Avatar initials={currentUser.avatar} role={currentUser.role} size="sm" />
+            <Avatar 
+              initials={currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)} 
+              role={currentUser.role} 
+              size="sm" 
+            />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{currentUser.name}</p>
               <Badge variant={getRoleBadgeVariant(currentUser.role)} className="mt-1">

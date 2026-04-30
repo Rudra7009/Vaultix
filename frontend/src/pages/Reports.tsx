@@ -25,8 +25,8 @@ export const Reports: React.FC = () => {
   };
 
   // Stock Report Data
-  const lowStockItems = inventoryItems.filter(i => i.quantityOnHand > 0 && i.quantityOnHand < i.reorderLevel);
-  const outOfStockItems = inventoryItems.filter(i => i.quantityOnHand === 0);
+  const lowStockItems = inventoryItems.filter(i => i.quantity_on_hand > 0 && i.quantity_on_hand < i.reorder_level);
+  const outOfStockItems = inventoryItems.filter(i => i.quantity_on_hand === 0);
 
   // Asset Summary Data
   const assetsByStatus = [
@@ -38,7 +38,7 @@ export const Reports: React.FC = () => {
 
   const assetsByType = Object.entries(
     assets.reduce((acc, a) => {
-      acc[a.assetType] = (acc[a.assetType] || 0) + 1;
+      acc[a.asset_type] = (acc[a.asset_type] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
   ).map(([name, value]) => ({ name, value })).slice(0, 6);
@@ -48,9 +48,21 @@ export const Reports: React.FC = () => {
   const sixtyDays = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
   const ninetyDays = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-  const expiring30 = assets.filter(a => a.warrantyExpiry && a.warrantyExpiry >= today && a.warrantyExpiry <= thirtyDays).length;
-  const expiring60 = assets.filter(a => a.warrantyExpiry && a.warrantyExpiry > thirtyDays && a.warrantyExpiry <= sixtyDays).length;
-  const expiring90 = assets.filter(a => a.warrantyExpiry && a.warrantyExpiry > sixtyDays && a.warrantyExpiry <= ninetyDays).length;
+  const expiring30 = assets.filter(a => {
+    if (!a.warranty_expiry) return false;
+    const warrantyDate = new Date(a.warranty_expiry);
+    return warrantyDate >= today && warrantyDate <= thirtyDays;
+  }).length;
+  const expiring60 = assets.filter(a => {
+    if (!a.warranty_expiry) return false;
+    const warrantyDate = new Date(a.warranty_expiry);
+    return warrantyDate > thirtyDays && warrantyDate <= sixtyDays;
+  }).length;
+  const expiring90 = assets.filter(a => {
+    if (!a.warranty_expiry) return false;
+    const warrantyDate = new Date(a.warranty_expiry);
+    return warrantyDate > sixtyDays && warrantyDate <= ninetyDays;
+  }).length;
 
   // Maintenance Cost Data
   const completedMaintenance = maintenanceRecords.filter(m => m.status === 'COMPLETED' && m.cost);
@@ -64,7 +76,11 @@ export const Reports: React.FC = () => {
     const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
     
     const cost = completedMaintenance
-      .filter(m => m.completedDate && m.completedDate >= monthStart && m.completedDate <= monthEnd)
+      .filter(m => {
+        if (!m.completed_date) return false;
+        const completedDate = new Date(m.completed_date);
+        return completedDate >= monthStart && completedDate <= monthEnd;
+      })
       .reduce((sum, m) => sum + (m.cost || 0), 0);
     
     return {
@@ -75,7 +91,10 @@ export const Reports: React.FC = () => {
 
   // Movement Report Data (last 30 days)
   const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const recentTransactions = transactions.filter(t => t.date >= thirtyDaysAgo);
+  const recentTransactions = transactions.filter(t => {
+    const txDate = new Date(t.created_at);
+    return txDate >= thirtyDaysAgo;
+  });
 
   const dailyMovement = Array.from({ length: 30 }, (_, i) => {
     const date = new Date(thirtyDaysAgo.getTime() + i * 24 * 60 * 60 * 1000);
@@ -83,11 +102,17 @@ export const Reports: React.FC = () => {
     const dayEnd = new Date(date.setHours(23, 59, 59, 999));
     
     const inward = recentTransactions
-      .filter(t => t.type === 'INWARD' && t.date >= dayStart && t.date <= dayEnd)
+      .filter(t => {
+        const txDate = new Date(t.created_at);
+        return t.type === 'INWARD' && txDate >= dayStart && txDate <= dayEnd;
+      })
       .reduce((sum, t) => sum + t.quantity, 0);
     
     const outward = recentTransactions
-      .filter(t => t.type === 'OUTWARD' && t.date >= dayStart && t.date <= dayEnd)
+      .filter(t => {
+        const txDate = new Date(t.created_at);
+        return t.type === 'OUTWARD' && txDate >= dayStart && txDate <= dayEnd;
+      })
       .reduce((sum, t) => sum + t.quantity, 0);
     
     return {
@@ -182,10 +207,10 @@ export const Reports: React.FC = () => {
                   onClick={() => exportCSV(inventoryItems.map(i => ({
                     Name: i.name,
                     Category: i.category,
-                    Quantity: i.quantityOnHand,
+                    Quantity: i.quantity_on_hand,
                     Unit: i.unit,
-                    ReorderLevel: i.reorderLevel,
-                    Location: i.location
+                    ReorderLevel: i.reorder_level,
+                    Location: i.location?.name || 'N/A'
                   })), 'stock-report.csv')}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
@@ -210,12 +235,12 @@ export const Reports: React.FC = () => {
                       <tr key={item.id}>
                         <td className="px-6 py-4 text-sm text-gray-900">{item.name}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{item.category}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.quantityOnHand} {item.unit}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{item.reorderLevel} {item.unit}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.quantity_on_hand} {item.unit}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{item.reorder_level} {item.unit}</td>
                         <td className="px-6 py-4 text-sm">
-                          {item.quantityOnHand === 0 ? (
+                          {item.quantity_on_hand === 0 ? (
                             <span className="text-red-600 font-semibold">Out of Stock</span>
-                          ) : item.quantityOnHand < item.reorderLevel ? (
+                          ) : item.quantity_on_hand < item.reorder_level ? (
                             <span className="text-amber-600 font-semibold">Low Stock</span>
                           ) : (
                             <span className="text-green-600">OK</span>
@@ -249,11 +274,11 @@ export const Reports: React.FC = () => {
               <div className="flex justify-end">
                 <button
                   onClick={() => exportCSV(recentTransactions.map(t => ({
-                    Date: t.date.toLocaleDateString(),
-                    Item: t.itemName,
+                    Date: new Date(t.created_at).toLocaleDateString(),
+                    Item: t.item?.name || 'N/A',
                     Type: t.type,
                     Quantity: t.quantity,
-                    PerformedBy: t.performedBy
+                    PerformedBy: t.performer?.name || 'N/A'
                   })), 'movement-report.csv')}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
@@ -276,11 +301,11 @@ export const Reports: React.FC = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {recentTransactions.slice(0, 20).map(tx => (
                       <tr key={tx.id}>
-                        <td className="px-6 py-4 text-sm text-gray-600">{tx.date.toLocaleDateString()}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{tx.itemName}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{new Date(tx.created_at).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{tx.item?.name || 'N/A'}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{tx.type}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{tx.quantity}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{tx.performedBy}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{tx.performer?.name || 'N/A'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -395,11 +420,11 @@ export const Reports: React.FC = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {completedMaintenance.map(m => (
                       <tr key={m.id}>
-                        <td className="px-6 py-4 text-sm text-gray-900">{m.assetName}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{m.maintenanceType}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{m.completedDate?.toLocaleDateString()}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{m.technician}</td>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">${m.cost}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{m.asset?.name || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{m.maintenance_type}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{m.completed_date ? new Date(m.completed_date).toLocaleDateString() : 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{m.technician?.name || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">${m.cost || 0}</td>
                       </tr>
                     ))}
                   </tbody>
