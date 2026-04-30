@@ -1,5 +1,5 @@
 import React from 'react';
-import { Role } from '../data/seed';
+import { UserRole as Role } from '../lib/database.types';
 
 interface AvatarProps {
   initials: string;

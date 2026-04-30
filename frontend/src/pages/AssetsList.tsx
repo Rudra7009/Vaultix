@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { Badge } from '../components/Badge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
-import { Asset, AssetStatus } from '../data/seed';
+import { Asset, AssetStatus } from '../lib/database.types';
 
 export const AssetsList: React.FC = () => {
   const { assets, deleteAsset } = useApp();

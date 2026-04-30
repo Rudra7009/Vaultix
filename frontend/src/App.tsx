@@ -4,17 +4,17 @@ import { supabase } from './lib/supabase'
 import { Profile } from './lib/database.types'
 import { AppProvider } from './context/AppContext'
 import { ToastProvider } from './context/ToastContext'
-import Layout from './components/Layout'
+import { Layout } from './components/Layout'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Inventory from './pages/Inventory'
-import AssetsList from './pages/AssetsList'
-import AssetDetail from './pages/AssetDetail'
-import Maintenance from './pages/Maintenance'
-import Reports from './pages/Reports'
-import Users from './pages/Users'
-import ActivityLog from './pages/ActivityLog'
-import NotFound from './pages/NotFound'
+import { Dashboard } from './pages/Dashboard'
+import { Inventory } from './pages/Inventory'
+import { AssetsList } from './pages/AssetsList'
+import { AssetDetail } from './pages/AssetDetail'
+import { Maintenance } from './pages/Maintenance'
+import { Reports } from './pages/Reports'
+import { Users } from './pages/Users'
+import { ActivityLog } from './pages/ActivityLog'
+import { NotFound } from './pages/NotFound'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true)
@@ -74,23 +74,17 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Routes>
-                    <Route path="/dashboard"   element={<Dashboard />} />
-                    <Route path="/inventory"   element={<Inventory />} />
-                    <Route path="/assets"      element={<AssetsList />} />
-                    <Route path="/assets/:id"  element={<AssetDetail />} />
-                    <Route path="/maintenance" element={<Maintenance />} />
-                    <Route path="/reports"     element={<Reports />} />
-                    <Route path="/users"       element={<Users />} />
-                    <Route path="/activity"    element={<ActivityLog />} />
-                    <Route path="*"            element={<NotFound />} />
-                  </Routes>
-                </Layout>
-              </ProtectedRoute>
-            } />
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/dashboard"   element={<Dashboard />} />
+              <Route path="/inventory"   element={<Inventory />} />
+              <Route path="/assets"      element={<AssetsList />} />
+              <Route path="/assets/:id"  element={<AssetDetail />} />
+              <Route path="/maintenance" element={<Maintenance />} />
+              <Route path="/reports"     element={<Reports />} />
+              <Route path="/users"       element={<Users />} />
+              <Route path="/activity"    element={<ActivityLog />} />
+              <Route path="*"            element={<NotFound />} />
+            </Route>
           </Routes>
         </AppProvider>
       </ToastProvider>

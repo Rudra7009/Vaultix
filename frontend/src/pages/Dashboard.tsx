@@ -13,13 +13,14 @@ export const Dashboard: React.FC = () => {
   // Calculate stats
   const totalAssets = assets.filter(a => a.status !== 'DISPOSED').length;
   const totalInventory = inventoryItems.length;
-  const lowStockCount = inventoryItems.filter(i => i.quantityOnHand > 0 && i.quantityOnHand < i.reorderLevel).length;
+  const lowStockCount = inventoryItems.filter(i => i.quantity_on_hand > 0 && i.quantity_on_hand < i.reorder_level).length;
   
   const today = new Date();
   const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const maintenanceDue = maintenanceRecords.filter(
-    m => m.status === 'SCHEDULED' && m.scheduledDate <= sevenDaysFromNow && m.scheduledDate >= today
-  ).length;
+  const maintenanceDue = maintenanceRecords.filter(m => {
+    const scheduledDate = new Date(m.scheduled_date);
+    return m.status === 'SCHEDULED' && scheduledDate <= sevenDaysFromNow && scheduledDate >= today;
+  }).length;
 
   // Asset status pie chart data
   const assetStatusData = [
@@ -40,11 +41,17 @@ export const Dashboard: React.FC = () => {
     const dayEnd = new Date(date.setHours(23, 59, 59, 999));
     
     const inward = transactions
-      .filter(t => t.type === 'INWARD' && t.date >= dayStart && t.date <= dayEnd)
+      .filter(t => {
+        const txDate = new Date(t.created_at);
+        return t.type === 'INWARD' && txDate >= dayStart && txDate <= dayEnd;
+      })
       .reduce((sum, t) => sum + t.quantity, 0);
     
     const outward = transactions
-      .filter(t => t.type === 'OUTWARD' && t.date >= dayStart && t.date <= dayEnd)
+      .filter(t => {
+        const txDate = new Date(t.created_at);
+        return t.type === 'OUTWARD' && txDate >= dayStart && txDate <= dayEnd;
+      })
       .reduce((sum, t) => sum + t.quantity, 0);
     
     return { day, Inward: inward, Outward: outward };
@@ -52,15 +59,16 @@ export const Dashboard: React.FC = () => {
 
   // Recent transactions
   const recentTransactions = [...transactions]
-    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
 
   // Alerts
-  const lowStockItems = inventoryItems.filter(i => i.quantityOnHand > 0 && i.quantityOnHand < i.reorderLevel);
-  const outOfStockItems = inventoryItems.filter(i => i.quantityOnHand === 0);
-  const upcomingMaintenance = maintenanceRecords.filter(
-    m => m.status === 'SCHEDULED' && m.scheduledDate <= sevenDaysFromNow && m.scheduledDate >= today
-  );
+  const lowStockItems = inventoryItems.filter(i => i.quantity_on_hand > 0 && i.quantity_on_hand < i.reorder_level);
+  const outOfStockItems = inventoryItems.filter(i => i.quantity_on_hand === 0);
+  const upcomingMaintenance = maintenanceRecords.filter(m => {
+    const scheduledDate = new Date(m.scheduled_date);
+    return m.status === 'SCHEDULED' && scheduledDate <= sevenDaysFromNow && scheduledDate >= today;
+  });
 
   return (
     <div className="space-y-6">
@@ -160,15 +168,15 @@ export const Dashboard: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {recentTransactions.map(tx => (
                   <tr key={tx.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">{tx.itemName}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{tx.item?.name || 'N/A'}</td>
                     <td className="px-6 py-4">
                       <Badge variant={tx.type === 'INWARD' ? 'success' : tx.type === 'OUTWARD' ? 'error' : 'info'}>
                         {tx.type}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">{tx.quantity}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{tx.performedBy}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{tx.date.toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{tx.performer?.name || 'System'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{new Date(tx.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -202,7 +210,7 @@ export const Dashboard: React.FC = () => {
                 <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-amber-900">Low Stock</p>
-                  <p className="text-sm text-amber-700">{item.name} ({item.quantityOnHand} {item.unit})</p>
+                  <p className="text-sm text-amber-700">{item.name} ({item.quantity_on_hand} {item.unit})</p>
                 </div>
                 <button
                   onClick={() => navigate('/inventory')}
@@ -217,7 +225,7 @@ export const Dashboard: React.FC = () => {
                 <Wrench className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-blue-900">Maintenance Due</p>
-                  <p className="text-sm text-blue-700">{m.assetName} on {m.scheduledDate.toLocaleDateString()}</p>
+                  <p className="text-sm text-blue-700">{m.asset?.name || 'Asset'} on {new Date(m.scheduled_date).toLocaleDateString()}</p>
                 </div>
                 <button
                   onClick={() => navigate('/maintenance')}

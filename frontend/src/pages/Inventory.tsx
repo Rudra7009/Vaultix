@@ -7,7 +7,7 @@ import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
-import { InventoryItem, Transaction } from '../data/seed';
+import { InventoryItem, InventoryTransaction as Transaction } from '../lib/database.types';
 
 export const Inventory: React.FC = () => {
   const { inventoryItems, addInventoryItem, updateInventoryItem, deleteInventoryItem, recordTransaction, currentUser, transactions } = useApp();

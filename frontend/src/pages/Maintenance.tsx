@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { Badge } from '../components/Badge';
-import { MaintenanceStatus } from '../data/seed';
+import { MaintenanceStatus } from '../lib/database.types';
 
 export const Maintenance: React.FC = () => {
   const { maintenanceRecords } = useApp();

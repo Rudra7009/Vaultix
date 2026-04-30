@@ -19,8 +19,8 @@ INSERT INTO locations (id, name, type, description) VALUES
   ('l1000000-0000-0000-0000-000000000006', 'Storage', 'WAREHOUSE', 'Secondary storage');
 
 -- Create auth users and profiles
--- Password for all users: password123
-DO $$
+-- Password for all users: Vaultix@123
+DO $
 DECLARE
   user_id_1 uuid;
   user_id_2 uuid;
@@ -28,7 +28,7 @@ DECLARE
   user_id_4 uuid;
   user_id_5 uuid;
 BEGIN
-  -- User 1: Vidushi Tripathi (ADMIN)
+  -- User 1: Alice Admin (ADMIN)
   INSERT INTO auth.users (
     instance_id,
     id,
@@ -48,11 +48,11 @@ BEGIN
     'u1000000-0000-0000-0000-000000000001',
     'authenticated',
     'authenticated',
-    'vidushi@vaultix.com',
-    crypt('password123', gen_salt('bf')),
+    'admin@vaultix.com',
+    crypt('Vaultix@123', gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Vidushi Tripathi","role":"ADMIN"}',
+    '{"name":"Alice Admin","role":"ADMIN"}',
     now(),
     now(),
     '',
@@ -60,9 +60,9 @@ BEGIN
   ) RETURNING id INTO user_id_1;
 
   INSERT INTO profiles (id, name, email, role, department_id, is_active) VALUES
-    (user_id_1, 'Vidushi Tripathi', 'vidushi@vaultix.com', 'ADMIN', 'd1000000-0000-0000-0000-000000000001', true);
+    (user_id_1, 'Alice Admin', 'admin@vaultix.com', 'ADMIN', 'd1000000-0000-0000-0000-000000000001', true);
 
-  -- User 2: Rajesh Kumar (MANAGER)
+  -- User 2: Mark Manager (MANAGER)
   INSERT INTO auth.users (
     instance_id,
     id,
@@ -82,11 +82,11 @@ BEGIN
     'u1000000-0000-0000-0000-000000000002',
     'authenticated',
     'authenticated',
-    'rajesh@vaultix.com',
-    crypt('password123', gen_salt('bf')),
+    'manager@vaultix.com',
+    crypt('Vaultix@123', gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Rajesh Kumar","role":"MANAGER"}',
+    '{"name":"Mark Manager","role":"MANAGER"}',
     now(),
     now(),
     '',
@@ -94,9 +94,9 @@ BEGIN
   ) RETURNING id INTO user_id_2;
 
   INSERT INTO profiles (id, name, email, role, department_id, is_active) VALUES
-    (user_id_2, 'Rajesh Kumar', 'rajesh@vaultix.com', 'MANAGER', 'd1000000-0000-0000-0000-000000000002', true);
+    (user_id_2, 'Mark Manager', 'manager@vaultix.com', 'MANAGER', 'd1000000-0000-0000-0000-000000000002', true);
 
-  -- User 3: Priya Sharma (INVENTORY_CLERK)
+  -- User 3: Carol Clerk (INVENTORY_CLERK)
   INSERT INTO auth.users (
     instance_id,
     id,
@@ -116,11 +116,11 @@ BEGIN
     'u1000000-0000-0000-0000-000000000003',
     'authenticated',
     'authenticated',
-    'priya@vaultix.com',
-    crypt('password123', gen_salt('bf')),
+    'clerk@vaultix.com',
+    crypt('Vaultix@123', gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Priya Sharma","role":"INVENTORY_CLERK"}',
+    '{"name":"Carol Clerk","role":"INVENTORY_CLERK"}',
     now(),
     now(),
     '',
@@ -128,9 +128,9 @@ BEGIN
   ) RETURNING id INTO user_id_3;
 
   INSERT INTO profiles (id, name, email, role, department_id, is_active) VALUES
-    (user_id_3, 'Priya Sharma', 'priya@vaultix.com', 'INVENTORY_CLERK', 'd1000000-0000-0000-0000-000000000002', true);
+    (user_id_3, 'Carol Clerk', 'clerk@vaultix.com', 'INVENTORY_CLERK', 'd1000000-0000-0000-0000-000000000002', true);
 
-  -- User 4: Amit Patel (TECHNICIAN)
+  -- User 4: Tom Tech (TECHNICIAN)
   INSERT INTO auth.users (
     instance_id,
     id,
@@ -150,11 +150,11 @@ BEGIN
     'u1000000-0000-0000-0000-000000000004',
     'authenticated',
     'authenticated',
-    'amit@vaultix.com',
-    crypt('password123', gen_salt('bf')),
+    'tech@vaultix.com',
+    crypt('Vaultix@123', gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Amit Patel","role":"TECHNICIAN"}',
+    '{"name":"Tom Tech","role":"TECHNICIAN"}',
     now(),
     now(),
     '',
@@ -162,9 +162,9 @@ BEGIN
   ) RETURNING id INTO user_id_4;
 
   INSERT INTO profiles (id, name, email, role, department_id, is_active) VALUES
-    (user_id_4, 'Amit Patel', 'amit@vaultix.com', 'TECHNICIAN', 'd1000000-0000-0000-0000-000000000003', true);
+    (user_id_4, 'Tom Tech', 'tech@vaultix.com', 'TECHNICIAN', 'd1000000-0000-0000-0000-000000000003', true);
 
-  -- User 5: Sneha Reddy (AUDITOR)
+  -- User 5: Amy Auditor (AUDITOR)
   INSERT INTO auth.users (
     instance_id,
     id,
@@ -184,11 +184,11 @@ BEGIN
     'u1000000-0000-0000-0000-000000000005',
     'authenticated',
     'authenticated',
-    'sneha@vaultix.com',
-    crypt('password123', gen_salt('bf')),
+    'auditor@vaultix.com',
+    crypt('Vaultix@123', gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Sneha Reddy","role":"AUDITOR"}',
+    '{"name":"Amy Auditor","role":"AUDITOR"}',
     now(),
     now(),
     '',
@@ -196,8 +196,8 @@ BEGIN
   ) RETURNING id INTO user_id_5;
 
   INSERT INTO profiles (id, name, email, role, department_id, is_active) VALUES
-    (user_id_5, 'Sneha Reddy', 'sneha@vaultix.com', 'AUDITOR', 'd1000000-0000-0000-0000-000000000004', true);
-END $$;
+    (user_id_5, 'Amy Auditor', 'auditor@vaultix.com', 'AUDITOR', 'd1000000-0000-0000-0000-000000000004', true);
+END $;
 
 -- Insert Assets
 INSERT INTO assets (id, serial_no, name, asset_type, status, location_id, department_id, assigned_to, purchase_date, cost, warranty_expiry, created_at) VALUES

@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { Avatar } from '../components/Avatar';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
-import { User, Role } from '../data/seed';
+import { Profile as User, UserRole as Role } from '../lib/database.types';
 
 export const Users: React.FC = () => {
   const { users, currentUser, addUser, updateUser } = useApp();
