@@ -1,83 +1,168 @@
 # Vaultix - Smart Inventory & Asset Tracking System
 
-A modern, full-stack inventory and asset tracking system built with React and Supabase.
+A comprehensive enterprise-grade inventory and asset management system built with React, TypeScript, and Supabase.
 
-## 🚀 Quick Start
+## 🚀 Features
 
-1. **Install dependencies**
-   ```bash
-   npm run install:all
-   ```
+- **Asset Management**: Track and manage all organizational assets with detailed information
+- **Inventory Control**: Real-time inventory tracking with automatic reorder alerts
+- **Maintenance Scheduling**: Preventive and corrective maintenance management
+- **Role-Based Access Control**: 5 distinct user roles (Admin, Manager, Clerk, Technician, Auditor)
+- **Audit Logging**: Complete audit trail of all system activities
+- **Real-time Updates**: Live data synchronization across all users
+- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 
-2. **Set up Supabase**
-   - Follow the detailed instructions in `SUPABASE_SETUP.md`
-   - Create a Supabase project at https://supabase.com
-   - Run the SQL files in `supabase/` directory
-   - Configure your `.env.local` file
-
-3. **Start the app**
-   ```bash
-   npm run dev
-   ```
-
-4. **Login with demo credentials**
-   - Email: `vidushi@vaultix.com`
-   - Password: `password123`
-
-## 📋 Features
-
-- **Asset Management** - Complete lifecycle tracking of physical assets
-- **Inventory Control** - Real-time stock monitoring and transaction history
-- **Maintenance Scheduling** - Preventive and corrective maintenance tracking
-- **User Management** - Role-based access control with 5 user roles
-- **Reports & Analytics** - Visual dashboards and comprehensive reporting
-- **Audit Logging** - Complete audit trail for compliance
-
-## 🛠 Tech Stack
-
-- **Frontend**: React 19 + TypeScript + Tailwind CSS
-- **Backend**: Supabase (PostgreSQL + Auth + Row Level Security)
-- **State Management**: React Context API
-- **Charts**: Recharts
-- **Routing**: React Router v7
-
-## 📁 Project Structure
+## 🏗️ Architecture
 
 ```
-vaultix/
-├── frontend/           # React application
+Vaultix/
+├── frontend/          # React TypeScript application
 │   ├── src/
-│   │   ├── components/ # UI components
-│   │   ├── context/    # State management
-│   │   ├── pages/      # Page components
-│   │   └── lib/        # Supabase client
-│   └── public/
-├── supabase/          # Database schema and seeds
+│   │   ├── components/    # Reusable UI components
+│   │   ├── context/       # React Context providers
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── lib/           # Utilities and configurations
+│   │   ├── pages/         # Application pages
+│   │   └── data/          # Data utilities
+│   └── public/        # Static assets
+├── supabase/          # Database schema and migrations
 │   ├── schema.sql     # Database structure
 │   └── seed.sql       # Sample data
-├── SUPABASE_SETUP.md  # Setup instructions
-└── package.json       # Root package file
+└── README.md
 ```
 
-## 👥 User Roles
+## 🛠️ Tech Stack
 
-- **ADMIN** - Full system access
-- **MANAGER** - Manage assets, inventory, and users
-- **INVENTORY_CLERK** - Manage inventory and transactions
-- **TECHNICIAN** - Manage maintenance records
-- **AUDITOR** - Read-only access to audit logs
+### Frontend
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **React Router** - Navigation
+- **Supabase Client** - Backend integration
 
-## 🔐 Security
+### Backend
+- **Supabase** - Backend as a Service
+  - PostgreSQL database
+  - Authentication
+  - Real-time subscriptions
+  - Row Level Security (RLS)
 
-- Row Level Security (RLS) policies on all tables
-- Role-based access control
-- Secure authentication via Supabase Auth
-- Audit logging for all critical operations
+## 📋 Prerequisites
 
-## 📝 License
+- Node.js 16+ and npm
+- Supabase account
+- Git
 
-MIT
+## 🚀 Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Rudra7009/Vaultix.git
+cd Vaultix
+```
+
+### 2. Set Up Supabase
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Run the schema:
+   - Go to SQL Editor in Supabase Dashboard
+   - Copy and execute `supabase/schema.sql`
+3. Seed the database (optional):
+   - Execute `supabase/seed.sql` for demo data
+
+### 3. Configure Environment Variables
+
+```bash
+cd frontend
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your Supabase credentials:
+
+```env
+REACT_APP_SUPABASE_URL=your_supabase_project_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 4. Install Dependencies
+
+```bash
+npm install
+```
+
+### 5. Start Development Server
+
+```bash
+npm start
+```
+
+The application will open at `http://localhost:3000`
+
+## 👥 Demo Accounts
+
+After seeding the database, you can use these demo accounts:
+
+| Role | Email | Password | Permissions |
+|------|-------|----------|-------------|
+| Admin | admin@vaultix.com | Vaultix@123 | Full system access |
+| Manager | manager@vaultix.com | Vaultix@123 | Manage assets, inventory, users |
+| Inventory Clerk | clerk@vaultix.com | Vaultix@123 | Manage inventory transactions |
+| Technician | tech@vaultix.com | Vaultix@123 | Manage maintenance records |
+| Auditor | auditor@vaultix.com | Vaultix@123 | Read-only access, view audit logs |
+
+## 📦 Build for Production
+
+```bash
+cd frontend
+npm run build
+```
+
+The optimized production build will be in the `frontend/build` directory.
+
+## 🔒 Security Features
+
+- **Row Level Security (RLS)**: Database-level access control
+- **JWT Authentication**: Secure token-based authentication
+- **Role-Based Permissions**: Granular access control per user role
+- **Audit Logging**: Complete activity tracking
+- **Environment Variables**: Sensitive data protection
+
+## 📊 Database Schema
+
+### Core Tables
+- `profiles` - User accounts and roles
+- `departments` - Organizational departments
+- `locations` - Physical locations
+- `assets` - Asset tracking
+- `inventory_items` - Inventory management
+- `inventory_transactions` - Stock movements
+- `maintenance_records` - Maintenance scheduling
+- `audit_logs` - System activity logs
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is proprietary software. All rights reserved.
+
+## 👨‍💻 Author
+
+**Rudra**
+- GitHub: [@Rudra7009](https://github.com/Rudra7009)
+
+## 🙏 Acknowledgments
+
+- Built with [React](https://reactjs.org/)
+- Powered by [Supabase](https://supabase.com/)
+- Styled with [Tailwind CSS](https://tailwindcss.com/)
+
+---
+
+**Note**: This is a production-level application. Ensure proper security configurations before deploying to production environments.
