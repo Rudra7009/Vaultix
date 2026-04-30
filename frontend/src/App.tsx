@@ -21,13 +21,39 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [authed, setAuthed] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthed(!!session); setChecking(false)
+    console.log('[ProtectedRoute] Starting session check...')
+    
+    // Fallback timeout in case getSession hangs forever
+    const timeout = setTimeout(() => {
+      console.log('[ProtectedRoute] Session check timed out after 5s')
+      setChecking(false)
+      supabase.auth.signOut()
+    }, 5000)
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      clearTimeout(timeout)
+      console.log('[ProtectedRoute] getSession returned:', { data, error })
+      if (error) {
+        console.error('Session error:', error)
+        supabase.auth.signOut()
+      }
+      setAuthed(!!data?.session)
+      setChecking(false)
+    }).catch((err) => {
+      clearTimeout(timeout)
+      console.error('Session catch error:', err)
+      setAuthed(false)
+      setChecking(false)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[ProtectedRoute] Auth state changed:', event, !!session)
       setAuthed(!!session)
     })
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   if (checking) return (

@@ -24,17 +24,29 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
+    console.log('[Login] Starting handleLogin')
     try {
+      console.log('[Login] Calling signInWithPassword...')
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      console.log('[Login] signInWithPassword returned', { data, authError })
       if (authError) throw authError
       if (data.user) {
-        const { data: profile } = await supabase.from('profiles').select('*, department:departments(*)').eq('id', data.user.id).single()
+        console.log('[Login] Fetching profile for user', data.user.id)
+        const { data: profile, error: profError } = await supabase.from('profiles').select('*, department:departments(*)').eq('id', data.user.id).single()
+        console.log('[Login] Fetching profile returned', { profile, profError })
+        if (profError) {
+           console.error('[Login] Profile fetch failed:', profError)
+           throw profError
+        }
+        console.log('[Login] Setting current user and navigating')
         setCurrentUser(profile)
         navigate('/dashboard')
       }
     } catch (err: any) {
+      console.error('[Login] Catch block hit:', err)
       setError(err.message || 'Invalid email or password')
     } finally {
+      console.log('[Login] Finally block hit')
       setLoading(false)
     }
   }
