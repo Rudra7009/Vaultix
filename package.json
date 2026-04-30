@@ -1,0 +1,16 @@
+{
+  "name": "vaultix",
+  "version": "1.0.0",
+  "description": "Smart Inventory & Asset Tracking System",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "install:all": "cd frontend && npm install",
+    "dev": "cd frontend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
